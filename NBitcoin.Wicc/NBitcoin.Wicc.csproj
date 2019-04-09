@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>NBitcoin</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Company>GitHubbard</Company>
+    <Authors>GitHubbard</Authors>
+    <Description>用于WaykiChain维基链的,基于NBitcoin的签名库</Description>
+    <PackageProjectUrl>https://github.com/GitHubbard/NBitcoin.Wicc/blob/master/LICENSE</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/GitHubbard/NBitcoin.Wicc</PackageIconUrl>
+    <AssemblyVersion>1.0.0.2</AssemblyVersion>
+    <FileVersion>1.0.0.2</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;NOCUSTOMSSLVALIDATION;NETSTANDARD;NOSOCKET;NOJSONNET;NONATIVEHASH</DefineConstants>
+  </PropertyGroup>
+
+</Project>
