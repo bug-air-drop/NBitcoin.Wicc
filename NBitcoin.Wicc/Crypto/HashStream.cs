@@ -122,11 +122,7 @@ namespace NBitcoin.Crypto
 			}
 		}
 
-#if NONATIVEHASH
 		byte[] _Buffer = new byte[32];
-#else
-		byte[] _Buffer = System.Buffers.ArrayPool<byte>.Shared.Rent(32 * 10);
-#endif
 
 		int _Pos;
 		public override void WriteByte(byte value)
@@ -145,7 +141,6 @@ namespace NBitcoin.Crypto
 			return false;
 		}
 
-#if NONATIVEHASH
 		BouncyCastle.Crypto.Digests.Sha256Digest sha = new BouncyCastle.Crypto.Digests.Sha256Digest();
 		private void ProcessBlock()
 		{
@@ -162,36 +157,6 @@ namespace NBitcoin.Crypto
 			sha.DoFinal(_Buffer, 0);
 			return new uint256(_Buffer);
 		}
-
-#else
-		SHA256Managed sha = new SHA256Managed();
-		private void ProcessBlock()
-		{
-			sha.TransformBlock(_Buffer, 0, _Pos, null, -1);
-			_Pos = 0;
-		}
-
-		static readonly byte[] Empty = new byte[0];
-		public override uint256 GetHash()
-		{
-			ProcessBlock();
-			sha.TransformFinalBlock(Empty, 0, 0);
-			var hash1 = sha.Hash;
-			Buffer.BlockCopy(sha.Hash, 0, _Buffer, 0, 32);
-			sha.Initialize();
-			sha.TransformFinalBlock(_Buffer, 0, 32);
-			var hash2 = sha.Hash;
-			return new uint256(hash2);
-		}
-
-		protected override void Dispose(bool disposing)
-		{
-			System.Buffers.ArrayPool<byte>.Shared.Return(_Buffer);
-			if(disposing)
-				sha.Dispose();
-			base.Dispose(disposing);
-		}
-#endif
 	}
 
 	/// <summary>

@@ -11,6 +11,7 @@
     <PackageIconUrl>https://github.com/GitHubbard/NBitcoin.Wicc</PackageIconUrl>
     <AssemblyVersion>1.0.0.2</AssemblyVersion>
     <FileVersion>1.0.0.2</FileVersion>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
