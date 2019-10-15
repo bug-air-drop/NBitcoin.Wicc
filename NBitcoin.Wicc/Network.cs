@@ -15,8 +15,6 @@ namespace NBitcoin
 
 	public partial class Network
 	{
-		internal byte[][] base58Prefixes = new byte[13][];
-
 		public byte[] GetVersionBytes(Base58Type type, bool throws)
 		{
 			switch (type)

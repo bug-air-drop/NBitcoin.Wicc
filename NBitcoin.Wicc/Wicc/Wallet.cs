@@ -1,110 +1,84 @@
 ﻿using System.ComponentModel;
 using System.IO;
+using System.Text;
 using NBitcoin.Protocol;
-using NBitcoin.Wicc.Core;
-using NBitcoin.Wicc.Transaction;
+using NBitcoin.Wicc.Commons;
+using NBitcoin.Wicc.Entities;
+using NBitcoin.Wicc.Tx;
 
 namespace NBitcoin.Wicc
 {
-	public class Wallet
-	{
-		public Network Network;
-		public string Prikey;
-		public UserId UserId;
+    public class Wallet
+    {
+        private string _prikey;
+        private BitcoinSecret _secret;
+        private Key _key;
+        public Network Network;
 
-		public string GetRegisteAccountRaw(ulong fees, uint blockHeight)
-		{
-			var secret = new BitcoinSecret(Prikey, Network);
-			var key = secret.PrivateKey;
-			var tx = new RegisterAccountTx
-			{
-				Fees = fees,
-				UserId = new VarString(key.PubKey.ToBytes()),
-				ValidHeight = (ulong)blockHeight
-			};
+        public UserId UserId;
 
-			//tx.Contract = new VarString(Encoding.UTF8.GetBytes("hello wayki"));
-			tx.SignByKey(key);
+        public Wallet(string privKey)
+        {
+            Network = privKey.StartsWith("P") ? Network.Main : Network.TestNet;
 
-			var ms = new MemoryStream();
-			var bs = new BitcoinStream(ms, true) { Type = SerializationType.Hash };
-			bs.ReadWrite(tx);
+            _prikey = privKey;
+            _secret = new BitcoinSecret(_prikey, Network);
+            _key = _secret.PrivateKey;
+        }
 
-			var str = Utils.ToHexString(ms.ToArray());
-			return str;
-		}
+        public string GetRegisterAccountRaw(ulong fees, uint blockHeight)
+        {
+            var tx = new AccountRegTx
+            {
+                Fees = fees,
+                TxUid = new PubKeyId(_secret.PubKey.ToBytes()),
+                ValidHeight = (uint)blockHeight
+            };
 
-		public string GetRegisteAppRaw(string scriptName, string scriptCode, ulong fees, uint blockHeight)
-		{
-			var secret = new BitcoinSecret(Prikey, Network);
-			var key = secret.PrivateKey;
+            var raw = tx.GetSiginedRaw(_key);
+            return raw;
+        }
 
-			var tx = new RegisterAppTx()
-			{
-				Fees = fees,
-				RegId = UserId,
-				ValidHeight = (ulong)blockHeight,
-				Script = new VarScript(scriptName, scriptCode)
-			};
+        public string GetRegisterAppRaw(string scriptName, string scriptCode, ulong fees, uint blockHeight)
+        {
+            var tx = new UniversalContractDeployTx()
+            {
+                Fees = fees,
+                TxUid = UserId,
+                ValidHeight = (uint)blockHeight,
+                Contract = new UniversalContract()
+                {
+                    VMType = VMType.LUA_VM,
+                    Upgradable = false,
+                    Code = Encoding.UTF8.GetBytes(scriptCode),
+                    Memo = scriptName
+                }
+            };
 
-			tx.SignByKey(key);
+            var raw = tx.GetSiginedRaw(_key);
+            return raw;
+        }
 
-			var ms = new MemoryStream();
-			var bs = new BitcoinStream(ms, true) { Type = SerializationType.Hash };
-			bs.ReadWrite(tx);
+        public string GetCoinTransferTxRaw(UserId toAddress, TokenSymbol token, ulong amount, ulong fees, uint blockHeight)
+        {
+            var tx = new CoinTransferTx()
+            {
+                Fees = fees,
+                TxUid = UserId,
+                ValidHeight = (uint)blockHeight,
+                Transfers = new Vector<CoinTransferTx.SingleTransfer>()
+                {
+                    new CoinTransferTx.SingleTransfer()
+                    {
+                        ToUid = toAddress,
+                        CoinSymbol = token,
+                        CoinAmount = amount
+                    }
+                }
+            };
 
-			var str = Utils.ToHexString(ms.ToArray());
-			return str;
-		}
-
-		public string CreateContractTxRaw(string scriptRegId, string contract, ulong fees, uint blockHeight)
-		{
-			var hex = Utils.ToByteArray(contract);
-			var secret = new BitcoinSecret(Prikey, Network);
-			var key = secret.PrivateKey;
-
-			var tx = new ContractTx()
-			{
-				Fees = fees,
-				Contract = new VarString(hex),
-				ValidHeight = (ulong)blockHeight,
-				SrcId = this.UserId,
-				DesId = new UserId(uint.Parse(scriptRegId.Split('-')[0]), uint.Parse(scriptRegId.Split('-')[1])),
-				Values = 0
-			};
-
-			tx.SignByKey(key);
-
-			var ms = new MemoryStream();
-			var bs = new BitcoinStream(ms, true) { Type = SerializationType.Hash };
-			bs.ReadWrite(tx);
-
-			var str = Utils.ToHexString(ms.ToArray());
-			return str;
-		}
-
-		public string CreateCommonTxRaw(UserId toAddress, ulong fees, ulong amount, uint blockHeight)
-		{
-			var secret = new BitcoinSecret(Prikey, Network);
-			var key = secret.PrivateKey;
-			var tx = new CommonTx()
-			{
-				Fees = fees,
-				Contract = new VarString(),
-				ValidHeight = blockHeight,
-				SrcId = this.UserId,
-				DesId = toAddress,
-				Values = amount
-			};
-
-			tx.SignByKey(key);
-
-			var ms = new MemoryStream();
-			var bs = new BitcoinStream(ms, true) { Type = SerializationType.Hash };
-			bs.ReadWrite(tx);
-
-			var str = Utils.ToHexString(ms.ToArray());
-			return str;
-		}
-	}
+            var raw = tx.GetSiginedRaw(_key);
+            return raw;
+        }
+    }
 }

@@ -4,11 +4,11 @@ using NBitcoin.Wicc.Core;
 
 namespace NBitcoin.Wicc.Transaction
 {
-    public class RegisterAppTx : BaseTransaction
+    public class RegisterAppTx : 
     {
         public RegisterAppTx()
         {
-            TxType = (ulong)TxTypeConst.REG_APP_TX;
+            TxType = (ulong)Transaction.TxType.REG_APP_TX;
         }
 
         public UserId RegId;

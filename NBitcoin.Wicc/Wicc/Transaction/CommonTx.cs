@@ -1,19 +1,19 @@
 ﻿using System;
 using NBitcoin.Enum;
 using NBitcoin.Protocol;
-using NBitcoin.Wicc.Core;
 
 namespace NBitcoin.Wicc.Transaction
 {
-    public class CommonTx : BaseTransaction
+    public class CommonTx : Tx
     {
         public CommonTx()
         {
-            TxType = (ulong)TxTypeConst.COMMON_TX;
+            TxType = (ulong)Transaction.TxType.COMMON_TX;
         }
 
         public UserId SrcId;
         public UserId DesId;
+        public VarString FeesSymbol;
         public UInt64 Fees;
         public UInt64 Values;
         public VarString Contract;
@@ -25,6 +25,7 @@ namespace NBitcoin.Wicc.Transaction
             stream.ReadWriteAsCompactVarInt(ref ValidHeight);
             stream.ReadWrite(ref SrcId);
             stream.ReadWrite(ref DesId);
+            stream.ReadWrite(ref FeesSymbol);
             stream.ReadWriteAsCompactVarInt(ref Fees);
             stream.ReadWriteAsCompactVarInt(ref Values);
             stream.ReadWrite(ref Contract);
@@ -40,6 +41,7 @@ namespace NBitcoin.Wicc.Transaction
             stream.ReadWriteAsCompactVarInt(ref ValidHeight);
             stream.ReadWrite(ref SrcId);
             stream.ReadWrite(ref DesId);
+            stream.ReadWrite(ref FeesSymbol);
             stream.ReadWriteAsCompactVarInt(ref Fees);
             stream.ReadWriteAsCompactVarInt(ref Values);
             stream.ReadWrite(ref Contract);

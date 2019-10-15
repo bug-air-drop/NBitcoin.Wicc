@@ -12,620 +12,621 @@ using NBitcoin.BouncyCastle.Math;
 
 namespace NBitcoin
 {
-	public static class Extensions
-	{
-		public static async Task WithCancellation(this Task task, CancellationToken cancellationToken)
-		{
-			using (var delayCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-			{
-				var waiting = Task.Delay(-1, delayCTS.Token);
-				var doing = task;
-				if (await Task.WhenAny(waiting, doing).ConfigureAwait(false) == waiting)
-				{
+    public static class Extensions
+    {
+        public static async Task WithCancellation(this Task task, CancellationToken cancellationToken)
+        {
+            using (var delayCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+            {
+                var waiting = Task.Delay(-1, delayCTS.Token);
+                var doing = task;
+                if (await Task.WhenAny(waiting, doing).ConfigureAwait(false) == waiting)
+                {
 #pragma warning disable CS4014
-					// Need to handle potential exception unhandled later, the original exception is not yet finished
-					doing.ContinueWith(_ => _?.Exception?.Handle((e) => true));
+                    // Need to handle potential exception unhandled later, the original exception is not yet finished
+                    doing.ContinueWith(_ => _?.Exception?.Handle((e) => true));
 #pragma warning restore CS4014
-				}
-				delayCTS.Cancel();
-				cancellationToken.ThrowIfCancellationRequested();
-				await doing.ConfigureAwait(false);
-			}
-		}
+                }
+                delayCTS.Cancel();
+                cancellationToken.ThrowIfCancellationRequested();
+                await doing.ConfigureAwait(false);
+            }
+        }
 
-		public static async Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken)
-		{
-			using (var delayCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-			{
-				var waiting = Task.Delay(-1, delayCTS.Token);
-				var doing = task;
-				if (await Task.WhenAny(waiting, doing).ConfigureAwait(false) == waiting)
-				{
+        public static async Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken)
+        {
+            using (var delayCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+            {
+                var waiting = Task.Delay(-1, delayCTS.Token);
+                var doing = task;
+                if (await Task.WhenAny(waiting, doing).ConfigureAwait(false) == waiting)
+                {
 #pragma warning disable CS4014
-					// Need to handle potential exception unhandled later, the original exception is not yet finished
-					doing.ContinueWith(_ => _?.Exception?.Handle((e) => true));
+                    // Need to handle potential exception unhandled later, the original exception is not yet finished
+                    doing.ContinueWith(_ => _?.Exception?.Handle((e) => true));
 #pragma warning restore CS4014
-				}
-				delayCTS.Cancel();
-				cancellationToken.ThrowIfCancellationRequested();
-				return await doing.ConfigureAwait(false);
-			}
-		}
+                }
+                delayCTS.Cancel();
+                cancellationToken.ThrowIfCancellationRequested();
+                return await doing.ConfigureAwait(false);
+            }
+        }
 
-		public static byte[] ReadBytes(this Stream stream, int bytesToRead)
-		{
-			var buffer = new byte[bytesToRead];
-			ReadBytes(stream, bytesToRead, buffer);
-			return buffer;
-		}
+        public static byte[] ReadBytes(this Stream stream, int bytesToRead)
+        {
+            var buffer = new byte[bytesToRead];
+            ReadBytes(stream, bytesToRead, buffer);
+            return buffer;
+        }
 
-		public static int ReadBytes(this Stream stream, int bytesToRead, byte[] buffer)
-		{
-			int num = 0;
-			int num2;
-			do
-			{
-				num += (num2 = stream.Read(buffer, num, bytesToRead - num));
-			} while (num2 > 0 && num < bytesToRead);
-			return num;
-		}
+        public static int ReadBytes(this Stream stream, int bytesToRead, byte[] buffer)
+        {
+            int num = 0;
+            int num2;
+            do
+            {
+                num += (num2 = stream.Read(buffer, num, bytesToRead - num));
+            } while (num2 > 0 && num < bytesToRead);
+            return num;
+        }
 
-		public static async Task<byte[]> ReadBytesAsync(this Stream stream, int bytesToRead)
-		{
-			var buffer = new byte[bytesToRead];
-			int num = 0;
-			int num2;
-			do
-			{
-				num += (num2 = await stream.ReadAsync(buffer, num, bytesToRead - num).ConfigureAwait(false));
-			} while (num2 > 0 && num < bytesToRead);
-			return buffer;
-		}
+        public static async Task<byte[]> ReadBytesAsync(this Stream stream, int bytesToRead)
+        {
+            var buffer = new byte[bytesToRead];
+            int num = 0;
+            int num2;
+            do
+            {
+                num += (num2 = await stream.ReadAsync(buffer, num, bytesToRead - num).ConfigureAwait(false));
+            } while (num2 > 0 && num < bytesToRead);
+            return buffer;
+        }
 
-		public static int ReadBytes(this Stream stream, int count, out byte[] result)
-		{
-			result = new byte[count];
-			return stream.Read(result, 0, count);
-		}
-		public static IEnumerable<T> Resize<T>(this List<T> list, int count)
-		{
-			if (list.Count == count)
-				return new T[0];
+        public static int ReadBytes(this Stream stream, int count, out byte[] result)
+        {
+            result = new byte[count];
+            return stream.Read(result, 0, count);
+        }
+        public static IEnumerable<T> Resize<T>(this List<T> list, int count)
+        {
+            if (list.Count == count)
+                return new T[0];
 
-			List<T> removed = new List<T>();
+            List<T> removed = new List<T>();
 
-			for (int i = list.Count - 1; i + 1 > count; i--)
-			{
-				removed.Add(list[i]);
-				list.RemoveAt(i);
-			}
+            for (int i = list.Count - 1; i + 1 > count; i--)
+            {
+                removed.Add(list[i]);
+                list.RemoveAt(i);
+            }
 
-			while (list.Count < count)
-			{
-				list.Add(default(T));
-			}
-			return removed;
-		}
-		public static IEnumerable<List<T>> Partition<T>(this IEnumerable<T> source, int max)
-		{
-			return Partition(source, () => max);
-		}
-		public static IEnumerable<List<T>> Partition<T>(this IEnumerable<T> source, Func<int> max)
-		{
-			var partitionSize = max();
-			List<T> toReturn = new List<T>(partitionSize);
-			foreach (var item in source)
-			{
-				toReturn.Add(item);
-				if (toReturn.Count == partitionSize)
-				{
-					yield return toReturn;
-					partitionSize = max();
-					toReturn = new List<T>(partitionSize);
-				}
-			}
-			if (toReturn.Any())
-			{
-				yield return toReturn;
-			}
-		}
+            while (list.Count < count)
+            {
+                list.Add(default(T));
+            }
+            return removed;
+        }
+        public static IEnumerable<List<T>> Partition<T>(this IEnumerable<T> source, int max)
+        {
+            return Partition(source, () => max);
+        }
+        public static IEnumerable<List<T>> Partition<T>(this IEnumerable<T> source, Func<int> max)
+        {
+            var partitionSize = max();
+            List<T> toReturn = new List<T>(partitionSize);
+            foreach (var item in source)
+            {
+                toReturn.Add(item);
+                if (toReturn.Count == partitionSize)
+                {
+                    yield return toReturn;
+                    partitionSize = max();
+                    toReturn = new List<T>(partitionSize);
+                }
+            }
+            if (toReturn.Any())
+            {
+                yield return toReturn;
+            }
+        }
 
-		public static int ReadEx(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellation = default(CancellationToken))
-		{
-			if (stream == null)
-				throw new ArgumentNullException(nameof(stream));
-			if (buffer == null)
-				throw new ArgumentNullException(nameof(buffer));
-			if (offset < 0 || offset > buffer.Length)
-				throw new ArgumentOutOfRangeException("offset");
-			if (count <= 0 || count > buffer.Length)
-				throw new ArgumentOutOfRangeException("count"); //Disallow 0 as a debugging aid.
-			if (offset > buffer.Length - count)
-				throw new ArgumentOutOfRangeException("count");
+        public static int ReadEx(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellation = default(CancellationToken))
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0 || offset > buffer.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            if (count <= 0 || count > buffer.Length)
+                throw new ArgumentOutOfRangeException("count"); //Disallow 0 as a debugging aid.
+            if (offset > buffer.Length - count)
+                throw new ArgumentOutOfRangeException("count");
 
-			int totalReadCount = 0;
+            int totalReadCount = 0;
 
-			while (totalReadCount < count)
-			{
-				cancellation.ThrowIfCancellationRequested();
+            while (totalReadCount < count)
+            {
+                cancellation.ThrowIfCancellationRequested();
 
-				int currentReadCount;
+                int currentReadCount;
 
-				//Big performance problem with BeginRead for other stream types than NetworkStream.
-				//Only take the slow path if cancellation is possible.
-				if (stream is NetworkStream && cancellation.CanBeCanceled)
-				{
-					var ar = stream.BeginRead(buffer, offset + totalReadCount, count - totalReadCount, null, null);
-					if (!ar.CompletedSynchronously)
-					{
-						WaitHandle.WaitAny(new WaitHandle[] { ar.AsyncWaitHandle, cancellation.WaitHandle }, -1);
-					}
+                //Big performance problem with BeginRead for other stream types than NetworkStream.
+                //Only take the slow path if cancellation is possible.
+                if (stream is NetworkStream && cancellation.CanBeCanceled)
+                {
+                    var ar = stream.BeginRead(buffer, offset + totalReadCount, count - totalReadCount, null, null);
+                    if (!ar.CompletedSynchronously)
+                    {
+                        WaitHandle.WaitAny(new WaitHandle[] { ar.AsyncWaitHandle, cancellation.WaitHandle }, -1);
+                    }
 
-					//EndRead might block, so we need to test cancellation before calling it.
-					//This also is a bug because calling EndRead after BeginRead is contractually required.
-					//A potential fix is to use the ReadAsync API. Another fix is to register a callback with BeginRead that calls EndRead in all cases.
-					cancellation.ThrowIfCancellationRequested();
+                    //EndRead might block, so we need to test cancellation before calling it.
+                    //This also is a bug because calling EndRead after BeginRead is contractually required.
+                    //A potential fix is to use the ReadAsync API. Another fix is to register a callback with BeginRead that calls EndRead in all cases.
+                    cancellation.ThrowIfCancellationRequested();
 
-					currentReadCount = stream.EndRead(ar);
-				}
-				else
-				{
-					//IO interruption not supported in this path.
-					currentReadCount = stream.Read(buffer, offset + totalReadCount, count - totalReadCount);
-				}
+                    currentReadCount = stream.EndRead(ar);
+                }
+                else
+                {
+                    //IO interruption not supported in this path.
+                    currentReadCount = stream.Read(buffer, offset + totalReadCount, count - totalReadCount);
+                }
 
-				if (currentReadCount == 0)
-					return 0;
+                if (currentReadCount == 0)
+                    return 0;
 
-				totalReadCount += currentReadCount;
-			}
+                totalReadCount += currentReadCount;
+            }
 
-			return totalReadCount;
-		}
+            return totalReadCount;
+        }
 
-		public static void AddOrReplace<TKey, TValue>(this IDictionary<TKey, TValue> dico, TKey key, TValue value)
-		{
-			if (dico.ContainsKey(key))
-				dico[key] = value;
-			else
-				dico.Add(key, value);
-		}
+        public static void AddOrReplace<TKey, TValue>(this IDictionary<TKey, TValue> dico, TKey key, TValue value)
+        {
+            if (dico.ContainsKey(key))
+                dico[key] = value;
+            else
+                dico.Add(key, value);
+        }
 
-		public static TValue TryGet<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
-		{
-			TValue value;
-			dictionary.TryGetValue(key, out value);
-			return value;
-		}
+        public static TValue TryGet<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
+        {
+            TValue value;
+            dictionary.TryGetValue(key, out value);
+            return value;
+        }
 
-		public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
-		{
-			if (!dictionary.ContainsKey(key))
-			{
-				dictionary.Add(key, value);
-				return true;
-			}
-			return false;
-		}
+        public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (!dictionary.ContainsKey(key))
+            {
+                dictionary.Add(key, value);
+                return true;
+            }
+            return false;
+        }
 
-		/// <summary>
-		/// Converts a given DateTime into a Unix timestamp
-		/// </summary>
-		/// <param name="value">Any DateTime</param>
-		/// <returns>The given DateTime in Unix timestamp format</returns>
-		public static int ToUnixTimestamp(this DateTime value)
-		{
-			return (int)Math.Truncate((value.ToUniversalTime().Subtract(new DateTime(1970, 1, 1))).TotalSeconds);
-		}
+        /// <summary>
+        /// Converts a given DateTime into a Unix timestamp
+        /// </summary>
+        /// <param name="value">Any DateTime</param>
+        /// <returns>The given DateTime in Unix timestamp format</returns>
+        public static int ToUnixTimestamp(this DateTime value)
+        {
+            return (int)Math.Truncate((value.ToUniversalTime().Subtract(new DateTime(1970, 1, 1))).TotalSeconds);
+        }
 
-		/// <summary>
-		/// Gets a Unix timestamp representing the current moment
-		/// </summary>
-		/// <param name="ignored">Parameter ignored</param>
-		/// <returns>Now expressed as a Unix timestamp</returns>
-		public static int UnixTimestamp(this DateTime ignored)
-		{
-			return (int)Math.Truncate((DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds);
-		}
-	}
+        /// <summary>
+        /// Gets a Unix timestamp representing the current moment
+        /// </summary>
+        /// <param name="ignored">Parameter ignored</param>
+        /// <returns>Now expressed as a Unix timestamp</returns>
+        public static int UnixTimestamp(this DateTime ignored)
+        {
+            return (int)Math.Truncate((DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds);
+        }
+    }
 
-	internal static class ByteArrayExtensions
-	{
-		internal static bool StartWith(this byte[] data, byte[] versionBytes)
-		{
-			if (data.Length < versionBytes.Length)
-				return false;
-			for (int i = 0; i < versionBytes.Length; i++)
-			{
-				if (data[i] != versionBytes[i])
-					return false;
-			}
-			return true;
-		}
-		internal static byte[] SafeSubarray(this byte[] array, int offset, int count)
-		{
-			if (array == null)
-				throw new ArgumentNullException(nameof(array));
-			if (offset < 0 || offset > array.Length)
-				throw new ArgumentOutOfRangeException("offset");
-			if (count < 0 || offset + count > array.Length)
-				throw new ArgumentOutOfRangeException("count");
-			if (offset == 0 && array.Length == count)
-				return array;
-			var data = new byte[count];
-			Buffer.BlockCopy(array, offset, data, 0, count);
-			return data;
-		}
+    internal static class ByteArrayExtensions
+    {
+        internal static bool StartWith(this byte[] data, byte[] versionBytes)
+        {
+            if (data.Length < versionBytes.Length)
+                return false;
+            for (int i = 0; i < versionBytes.Length; i++)
+            {
+                if (data[i] != versionBytes[i])
+                    return false;
+            }
+            return true;
+        }
+        internal static byte[] SafeSubarray(this byte[] array, int offset, int count)
+        {
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (offset < 0 || offset > array.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            if (count < 0 || offset + count > array.Length)
+                throw new ArgumentOutOfRangeException("count");
+            if (offset == 0 && array.Length == count)
+                return array;
+            var data = new byte[count];
+            Buffer.BlockCopy(array, offset, data, 0, count);
+            return data;
+        }
 
-		internal static byte[] SafeSubarray(this byte[] array, int offset)
-		{
-			if (array == null)
-				throw new ArgumentNullException(nameof(array));
-			if (offset < 0 || offset > array.Length)
-				throw new ArgumentOutOfRangeException("offset");
+        internal static byte[] SafeSubarray(this byte[] array, int offset)
+        {
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (offset < 0 || offset > array.Length)
+                throw new ArgumentOutOfRangeException("offset");
 
-			var count = array.Length - offset;
-			var data = new byte[count];
-			Buffer.BlockCopy(array, offset, data, 0, count);
-			return data;
-		}
+            var count = array.Length - offset;
+            var data = new byte[count];
+            Buffer.BlockCopy(array, offset, data, 0, count);
+            return data;
+        }
 
-		internal static byte[] Concat(this byte[] arr, params byte[][] arrs)
-		{
-			var len = arr.Length + arrs.Sum(a => a.Length);
-			var ret = new byte[len];
-			Buffer.BlockCopy(arr, 0, ret, 0, arr.Length);
-			var pos = arr.Length;
-			foreach (var a in arrs)
-			{
-				Buffer.BlockCopy(a, 0, ret, pos, a.Length);
-				pos += a.Length;
-			}
-			return ret;
-		}
+        internal static byte[] Concat(this byte[] arr, params byte[][] arrs)
+        {
+            var len = arr.Length + arrs.Sum(a => a.Length);
+            var ret = new byte[len];
+            Buffer.BlockCopy(arr, 0, ret, 0, arr.Length);
+            var pos = arr.Length;
+            foreach (var a in arrs)
+            {
+                Buffer.BlockCopy(a, 0, ret, pos, a.Length);
+                pos += a.Length;
+            }
+            return ret;
+        }
 
-	}
+    }
 
-	public class Utils
-	{
-		internal static void SafeSet(ManualResetEvent ar)
-		{
-			try
-			{
+    public class Utils
+    {
+        internal static void SafeSet(ManualResetEvent ar)
+        {
+            try
+            {
 #if !NETSTANDARD1X
-				if (!ar.SafeWaitHandle.IsClosed && !ar.SafeWaitHandle.IsInvalid)
-					ar.Set();
+                if (!ar.SafeWaitHandle.IsClosed && !ar.SafeWaitHandle.IsInvalid)
+                    ar.Set();
 #else
 				ar.Set();
 #endif
-			}
-			catch { }
-		}
-		public static bool ArrayEqual(byte[] a, byte[] b)
-		{
-			if (a == null && b == null)
-				return true;
-			if (a == null)
-				return false;
-			if (b == null)
-				return false;
-			return ArrayEqual(a, 0, b, 0, Math.Max(a.Length, b.Length));
-		}
-		public static bool ArrayEqual(byte[] a, int startA, byte[] b, int startB, int length)
-		{
-			if (a == null && b == null)
-				return true;
-			if (a == null)
-				return false;
-			if (b == null)
-				return false;
-			var alen = a.Length - startA;
-			var blen = b.Length - startB;
+            }
+            catch { }
+        }
+        public static bool ArrayEqual(byte[] a, byte[] b)
+        {
+            if (a == null && b == null)
+                return true;
+            if (a == null)
+                return false;
+            if (b == null)
+                return false;
+            return ArrayEqual(a, 0, b, 0, Math.Max(a.Length, b.Length));
+        }
+        public static bool ArrayEqual(byte[] a, int startA, byte[] b, int startB, int length)
+        {
+            if (a == null && b == null)
+                return true;
+            if (a == null)
+                return false;
+            if (b == null)
+                return false;
+            var alen = a.Length - startA;
+            var blen = b.Length - startB;
 
-			if (alen < length || blen < length)
-				return false;
+            if (alen < length || blen < length)
+                return false;
 
-			for (int ai = startA, bi = startB; ai < startA + length; ai++, bi++)
-			{
-				if (a[ai] != b[bi])
-					return false;
-			}
-			return true;
-		}
+            for (int ai = startA, bi = startB; ai < startA + length; ai++, bi++)
+            {
+                if (a[ai] != b[bi])
+                    return false;
+            }
+            return true;
+        }
 
-		private static void Write(MemoryStream ms, byte[] bytes)
-		{
-			ms.Write(bytes, 0, bytes.Length);
-		}
+        private static void Write(MemoryStream ms, byte[] bytes)
+        {
+            ms.Write(bytes, 0, bytes.Length);
+        }
 
-		internal static byte[] BigIntegerToBytes(BigInteger b, int numBytes)
-		{
-			if (b == null)
-			{
-				return null;
-			}
-			byte[] bytes = new byte[numBytes];
-			byte[] biBytes = b.ToByteArray();
-			int start = (biBytes.Length == numBytes + 1) ? 1 : 0;
-			int length = Math.Min(biBytes.Length, numBytes);
-			Array.Copy(biBytes, start, bytes, numBytes - length, length);
-			return bytes;
-		}
+        internal static byte[] BigIntegerToBytes(BigInteger b, int numBytes)
+        {
+            if (b == null)
+            {
+                return null;
+            }
+            byte[] bytes = new byte[numBytes];
+            byte[] biBytes = b.ToByteArray();
+            int start = (biBytes.Length == numBytes + 1) ? 1 : 0;
+            int length = Math.Min(biBytes.Length, numBytes);
+            Array.Copy(biBytes, start, bytes, numBytes - length, length);
+            return bytes;
+        }
 
-		public static byte[] BigIntegerToBytes(BigInteger num)
-		{
-			if (num.Equals(BigInteger.Zero))
-				//Positive 0 is represented by a null-length vector
-				return new byte[0];
+        public static byte[] BigIntegerToBytes(BigInteger num)
+        {
+            if (num.Equals(BigInteger.Zero))
+                //Positive 0 is represented by a null-length vector
+                return new byte[0];
 
-			bool isPositive = true;
-			if (num.CompareTo(BigInteger.Zero) < 0)
-			{
-				isPositive = false;
-				num = num.Multiply(BigInteger.ValueOf(-1));
-			}
-			var array = num.ToByteArray();
-			Array.Reverse(array);
-			if (!isPositive)
-				array[array.Length - 1] |= 0x80;
-			return array;
-		}
+            bool isPositive = true;
+            if (num.CompareTo(BigInteger.Zero) < 0)
+            {
+                isPositive = false;
+                num = num.Multiply(BigInteger.ValueOf(-1));
+            }
+            var array = num.ToByteArray();
+            Array.Reverse(array);
+            if (!isPositive)
+                array[array.Length - 1] |= 0x80;
+            return array;
+        }
 
-		public static BigInteger BytesToBigInteger(byte[] data)
-		{
-			if (data == null)
-				throw new ArgumentNullException(nameof(data));
-			if (data.Length == 0)
-				return BigInteger.Zero;
-			data = data.ToArray();
-			var positive = (data[data.Length - 1] & 0x80) == 0;
-			if (!positive)
-			{
-				data[data.Length - 1] &= unchecked((byte)~0x80);
-				Array.Reverse(data);
-				return new BigInteger(1, data).Negate();
-			}
-			return new BigInteger(1, data);
-		}
+        public static BigInteger BytesToBigInteger(byte[] data)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (data.Length == 0)
+                return BigInteger.Zero;
+            data = data.ToArray();
+            var positive = (data[data.Length - 1] & 0x80) == 0;
+            if (!positive)
+            {
+                data[data.Length - 1] &= unchecked((byte)~0x80);
+                Array.Reverse(data);
+                return new BigInteger(1, data).Negate();
+            }
+            return new BigInteger(1, data);
+        }
 
-		static DateTimeOffset unixRef = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        static DateTimeOffset unixRef = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-		public static uint DateTimeToUnixTime(DateTimeOffset dt)
-		{
-			return (uint)DateTimeToUnixTimeLong(dt);
-		}
+        public static uint DateTimeToUnixTime(DateTimeOffset dt)
+        {
+            return (uint)DateTimeToUnixTimeLong(dt);
+        }
 
-		internal static ulong DateTimeToUnixTimeLong(DateTimeOffset dt)
-		{
-			dt = dt.ToUniversalTime();
-			if (dt < unixRef)
-				throw new ArgumentOutOfRangeException("The supplied datetime can't be expressed in unix timestamp");
-			var result = (dt - unixRef).TotalSeconds;
-			if (result > UInt32.MaxValue)
-				throw new ArgumentOutOfRangeException("The supplied datetime can't be expressed in unix timestamp");
-			return (ulong)result;
-		}
+        internal static ulong DateTimeToUnixTimeLong(DateTimeOffset dt)
+        {
+            dt = dt.ToUniversalTime();
+            if (dt < unixRef)
+                throw new ArgumentOutOfRangeException("The supplied datetime can't be expressed in unix timestamp");
+            var result = (dt - unixRef).TotalSeconds;
+            if (result > UInt32.MaxValue)
+                throw new ArgumentOutOfRangeException("The supplied datetime can't be expressed in unix timestamp");
+            return (ulong)result;
+        }
 
-		public static DateTimeOffset UnixTimeToDateTime(uint timestamp)
-		{
-			var span = TimeSpan.FromSeconds(timestamp);
-			return unixRef + span;
-		}
-		public static DateTimeOffset UnixTimeToDateTime(ulong timestamp)
-		{
-			var span = TimeSpan.FromSeconds(timestamp);
-			return unixRef + span;
-		}
-		public static DateTimeOffset UnixTimeToDateTime(long timestamp)
-		{
-			var span = TimeSpan.FromSeconds(timestamp);
-			return unixRef + span;
-		}
-		public static string ExceptionToString(Exception exception)
-		{
-			Exception ex = exception;
-			StringBuilder stringBuilder = new StringBuilder(128);
-			while (ex != null)
-			{
-				stringBuilder.Append(ex.GetType().Name);
-				stringBuilder.Append(": ");
-				stringBuilder.Append(ex.Message);
-				stringBuilder.AppendLine(ex.StackTrace);
-				ex = ex.InnerException;
-				if (ex != null)
-				{
-					stringBuilder.Append(" ---> ");
-				}
-			}
-			return stringBuilder.ToString();
-		}
+        public static DateTimeOffset UnixTimeToDateTime(uint timestamp)
+        {
+            var span = TimeSpan.FromSeconds(timestamp);
+            return unixRef + span;
+        }
+        public static DateTimeOffset UnixTimeToDateTime(ulong timestamp)
+        {
+            var span = TimeSpan.FromSeconds(timestamp);
+            return unixRef + span;
+        }
+        public static DateTimeOffset UnixTimeToDateTime(long timestamp)
+        {
+            var span = TimeSpan.FromSeconds(timestamp);
+            return unixRef + span;
+        }
+        public static string ExceptionToString(Exception exception)
+        {
+            Exception ex = exception;
+            StringBuilder stringBuilder = new StringBuilder(128);
+            while (ex != null)
+            {
+                stringBuilder.Append(ex.GetType().Name);
+                stringBuilder.Append(": ");
+                stringBuilder.Append(ex.Message);
+                stringBuilder.AppendLine(ex.StackTrace);
+                ex = ex.InnerException;
+                if (ex != null)
+                {
+                    stringBuilder.Append(" ---> ");
+                }
+            }
+            return stringBuilder.ToString();
+        }
 
-		public static void Shuffle<T>(T[] arr, Random rand)
-		{
-			rand = rand ?? new Random();
-			for (int i = 0; i < arr.Length; i++)
-			{
-				var fromIndex = rand.Next(arr.Length);
-				var from = arr[fromIndex];
+        public static void Shuffle<T>(T[] arr, Random rand)
+        {
+            rand = rand ?? new Random();
+            for (int i = 0; i < arr.Length; i++)
+            {
+                var fromIndex = rand.Next(arr.Length);
+                var from = arr[fromIndex];
 
-				var toIndex = rand.Next(arr.Length);
-				var to = arr[toIndex];
+                var toIndex = rand.Next(arr.Length);
+                var to = arr[toIndex];
 
-				arr[toIndex] = from;
-				arr[fromIndex] = to;
-			}
-		}
-		public static void Shuffle<T>(List<T> arr, Random rand)
-		{
-			rand = rand ?? new Random();
-			for (int i = 0; i < arr.Count; i++)
-			{
-				var fromIndex = rand.Next(arr.Count);
-				var from = arr[fromIndex];
+                arr[toIndex] = from;
+                arr[fromIndex] = to;
+            }
+        }
+        public static void Shuffle<T>(List<T> arr, Random rand)
+        {
+            rand = rand ?? new Random();
+            for (int i = 0; i < arr.Count; i++)
+            {
+                var fromIndex = rand.Next(arr.Count);
+                var from = arr[fromIndex];
 
-				var toIndex = rand.Next(arr.Count);
-				var to = arr[toIndex];
+                var toIndex = rand.Next(arr.Count);
+                var to = arr[toIndex];
 
-				arr[toIndex] = from;
-				arr[fromIndex] = to;
-			}
-		}
-		public static void Shuffle<T>(T[] arr, int seed)
-		{
-			Random rand = new Random(seed);
-			Shuffle(arr, rand);
-		}
+                arr[toIndex] = from;
+                arr[fromIndex] = to;
+            }
+        }
+        public static void Shuffle<T>(T[] arr, int seed)
+        {
+            Random rand = new Random(seed);
+            Shuffle(arr, rand);
+        }
 
-		public static void Shuffle<T>(T[] arr)
-		{
-			Shuffle(arr, null);
-		}
+        public static void Shuffle<T>(T[] arr)
+        {
+            Shuffle(arr, null);
+        }
 
-		public static byte[] ToBytes(uint value, bool littleEndian)
-		{
-			if (littleEndian)
-			{
-				return new byte[]
-				{
-					(byte)value,
-					(byte)(value >> 8),
-					(byte)(value >> 16),
-					(byte)(value >> 24),
-				};
-			}
-			else
-			{
-				return new byte[]
-				{
-					(byte)(value >> 24),
-					(byte)(value >> 16),
-					(byte)(value >> 8),
-					(byte)value,
-				};
-			}
-		}
+        public static byte[] ToBytes(uint value, bool littleEndian = true)
+        {
+            if (littleEndian)
+            {
+                return new byte[]
+                {
+                    (byte)value,
+                    (byte)(value >> 8),
+                    (byte)(value >> 16),
+                    (byte)(value >> 24),
+                };
+            }
+            else
+            {
+                return new byte[]
+                {
+                    (byte)(value >> 24),
+                    (byte)(value >> 16),
+                    (byte)(value >> 8),
+                    (byte)value,
+                };
+            }
+        }
 
-		public static byte[] ToBytes(ulong value, bool littleEndian)
-		{
-			if (littleEndian)
-			{
-				return new byte[]
-				{
-					(byte)value,
-					(byte)(value >> 8),
-					(byte)(value >> 16),
-					(byte)(value >> 24),
-					(byte)(value >> 32),
-					(byte)(value >> 40),
-					(byte)(value >> 48),
-					(byte)(value >> 56),
-				};
-			}
-			else
-			{
-				return new byte[]
-				{
-					(byte)(value >> 56),
-					(byte)(value >> 48),
-					(byte)(value >> 40),
-					(byte)(value >> 32),
-					(byte)(value >> 24),
-					(byte)(value >> 16),
-					(byte)(value >> 8),
-					(byte)value,
-				};
-			}
-		}
+        public static byte[] ToBytes(ulong value, bool littleEndian = true)
+        {
+            if (littleEndian)
+            {
+                return new byte[]
+                {
+                    (byte)value,
+                    (byte)(value >> 8),
+                    (byte)(value >> 16),
+                    (byte)(value >> 24),
+                    (byte)(value >> 32),
+                    (byte)(value >> 40),
+                    (byte)(value >> 48),
+                    (byte)(value >> 56),
+                };
+            }
+            else
+            {
+                return new byte[]
+                {
+                    (byte)(value >> 56),
+                    (byte)(value >> 48),
+                    (byte)(value >> 40),
+                    (byte)(value >> 32),
+                    (byte)(value >> 24),
+                    (byte)(value >> 16),
+                    (byte)(value >> 8),
+                    (byte)value,
+                };
+            }
+        }
 
-		public static uint ToUInt32(byte[] value, int index, bool littleEndian)
-		{
-			if (littleEndian)
-			{
-				return value[index]
-					   + ((uint)value[index + 1] << 8)
-					   + ((uint)value[index + 2] << 16)
-					   + ((uint)value[index + 3] << 24);
-			}
-			else
-			{
-				return value[index + 3]
-					   + ((uint)value[index + 2] << 8)
-					   + ((uint)value[index + 1] << 16)
-					   + ((uint)value[index + 0] << 24);
-			}
-		}
+        public static uint ToUInt32(byte[] value, int index, bool littleEndian = true)
+        {
+            if (littleEndian)
+            {
+                return value[index]
+                       + ((uint)value[index + 1] << 8)
+                       + ((uint)value[index + 2] << 16)
+                       + ((uint)value[index + 3] << 24);
+            }
+            else
+            {
+                return value[index + 3]
+                       + ((uint)value[index + 2] << 8)
+                       + ((uint)value[index + 1] << 16)
+                       + ((uint)value[index + 0] << 24);
+            }
+        }
 
-		public static int ToInt32(byte[] value, int index, bool littleEndian)
-		{
-			return unchecked((int)ToUInt32(value, index, littleEndian));
-		}
+        public static int ToInt32(byte[] value, int index, bool littleEndian = true)
+        {
+            return unchecked((int)ToUInt32(value, index, littleEndian));
+        }
 
-		public static uint ToUInt32(byte[] value, bool littleEndian)
-		{
-			return ToUInt32(value, 0, littleEndian);
-		}
-		public static ulong ToUInt64(byte[] value, bool littleEndian)
-		{
-			if (littleEndian)
-			{
-				return value[0]
-					   + ((ulong)value[1] << 8)
-					   + ((ulong)value[2] << 16)
-					   + ((ulong)value[3] << 24)
-					   + ((ulong)value[4] << 32)
-					   + ((ulong)value[5] << 40)
-					   + ((ulong)value[6] << 48)
-					   + ((ulong)value[7] << 56);
-			}
-			else
-			{
-				return value[7]
-					+ ((ulong)value[6] << 8)
-					+ ((ulong)value[5] << 16)
-					+ ((ulong)value[4] << 24)
-					+ ((ulong)value[3] << 32)
-					   + ((ulong)value[2] << 40)
-					   + ((ulong)value[1] << 48)
-					   + ((ulong)value[0] << 56);
-			}
-		}
+        public static uint ToUInt32(byte[] value, bool littleEndian = true)
+        {
+            return ToUInt32(value, 0, littleEndian);
+        }
 
-		public static int GetHashCode(byte[] array)
-		{
-			unchecked
-			{
-				if (array == null)
-				{
-					return 0;
-				}
-				int hash = 17;
-				for (int i = 0; i < array.Length; i++)
-				{
-					hash = hash * 31 + array[i];
-				}
-				return hash;
-			}
-		}
+        public static ulong ToUInt64(byte[] value, bool littleEndian = true)
+        {
+            if (littleEndian)
+            {
+                return value[0]
+                       + ((ulong)value[1] << 8)
+                       + ((ulong)value[2] << 16)
+                       + ((ulong)value[3] << 24)
+                       + ((ulong)value[4] << 32)
+                       + ((ulong)value[5] << 40)
+                       + ((ulong)value[6] << 48)
+                       + ((ulong)value[7] << 56);
+            }
+            else
+            {
+                return value[7]
+                    + ((ulong)value[6] << 8)
+                    + ((ulong)value[5] << 16)
+                    + ((ulong)value[4] << 24)
+                    + ((ulong)value[3] << 32)
+                       + ((ulong)value[2] << 40)
+                       + ((ulong)value[1] << 48)
+                       + ((ulong)value[0] << 56);
+            }
+        }
 
-		public static byte[] ToByteArray(string str)
-		{
-			str = str.Replace("\t", String.Empty).Replace("\r", String.Empty).Replace("\n", String.Empty);
-			var buffer = new byte[str.Length / 2];
-			for (var i = 0; i < str.Length; i += 2)
-				buffer[i / 2] = (byte)Convert.ToByte(str.Substring(i, 2), 16);
-			return buffer;
-		}
+        public static int GetHashCode(byte[] array)
+        {
+            unchecked
+            {
+                if (array == null)
+                {
+                    return 0;
+                }
+                int hash = 17;
+                for (int i = 0; i < array.Length; i++)
+                {
+                    hash = hash * 31 + array[i];
+                }
+                return hash;
+            }
+        }
 
-		public static string ToHexString(byte[] bytes)
-		{
-			var sb = new StringBuilder();
+        public static byte[] ToByteArray(string str)
+        {
+            str = str.Replace("\t", String.Empty).Replace("\r", String.Empty).Replace("\n", String.Empty);
+            var buffer = new byte[str.Length / 2];
+            for (var i = 0; i < str.Length; i += 2)
+                buffer[i / 2] = (byte)Convert.ToByte(str.Substring(i, 2), 16);
+            return buffer;
+        }
 
-			foreach (var item in bytes)
-			{
-				sb.Append(item.ToString("x2"));
-			}
+        public static string ToHexString(byte[] bytes)
+        {
+            var sb = new StringBuilder();
 
-			return sb.ToString();
-		}
-	}
+            foreach (var item in bytes)
+            {
+                sb.Append(item.ToString("x2"));
+            }
+
+            return sb.ToString();
+        }
+    }
 }

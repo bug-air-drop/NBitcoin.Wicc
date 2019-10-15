@@ -18,4 +18,15 @@
     <DefineConstants>TRACE;NOCUSTOMSSLVALIDATION;NETSTANDARD;NOSOCKET;NOJSONNET;NONATIVEHASH</DefineConstants>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Wicc\Transaction\CommonTx.cs" />
+    <Compile Remove="Wicc\Transaction\ContractTx.cs" />
+    <Compile Remove="Wicc\Transaction\RegisterAppTx.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Wicc\Core\" />
+    <Folder Include="Wicc\Transaction\" />
+  </ItemGroup>
+
 </Project>

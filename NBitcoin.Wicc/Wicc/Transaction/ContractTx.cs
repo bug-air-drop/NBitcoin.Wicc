@@ -5,11 +5,11 @@ using NBitcoin.Wicc.Core;
 
 namespace NBitcoin.Wicc.Transaction
 {
-    public class ContractTx : BaseTransaction
+    public class ContractTx : Tx
     {
         public ContractTx()
         {
-            TxType = (ulong)TxTypeConst.CONTRACT_TX;
+            TxType = (ulong)Transaction.TxType.CONTRACT_TX;
         }
 
         public UserId SrcId;
